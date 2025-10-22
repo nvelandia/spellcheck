@@ -1,0 +1,12 @@
+{
+  "name": "lambda-corrector",
+  "version": "1.0.0",
+  "description": "Lambda para corregir texto con Bedrock",
+  "main": "corrector.js",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.454.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.125"
+  }
+}
