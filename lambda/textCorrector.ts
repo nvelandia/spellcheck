@@ -22,8 +22,8 @@ export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
   // 2. Define los headers de CORS que devolverás
   const corsHeaders = {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS', // Métodos que permites
-    'Access-Control-Allow-Headers': 'Content-Type', // Headers que permites (añade "Authorization" si usas tokens)
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
   };
 
   if (event.requestContext.http.method === 'OPTIONS') {
@@ -98,14 +98,16 @@ Genera el JSON.
   try {
     const response = await client.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    const correctedText = responseBody.outputs[0].text.trim();
+    const bedrockJsonString = responseBody.outputs[0].text.trim();
+    const correctedText = JSON.parse(bedrockJsonString);
 
     return {
       statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({
-        text: correctedText,
-      }),
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(correctedText),
     };
   } catch (error) {
     console.error('Error al invocar Bedrock:', error);
@@ -113,7 +115,7 @@ Genera el JSON.
       statusCode: 500,
       headers: corsHeaders,
       body: JSON.stringify({
-        message: 'Error interno al procesar el texto.',
+        message: 'Error al procesar la respuesta de Bedrock',
       }),
     };
   }
