@@ -9,7 +9,7 @@ interface LambdaEvent {
 }
 
 const client = new BedrockRuntimeClient({ region: 'us-east-1' });
-const modelId = 'mistral.mistral-7b-instruct-v0:2';
+const modelId = 'mistral.mistral-small-2402-v1:0';
 
 export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
   event: any
@@ -32,15 +32,38 @@ export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
   const inputText = inputData.text;
 
   const prompt = `
-  Corrige ortografía y gramática del texto. Devuelve únicamente el texto original, sin ninguna explicación adicional.
-  Texto original: ${inputText}`;
+  [INST]
+  Eres un corrector de textos experto en español, enfocado en deportes. 
+Tu única función es actuar como una API de corrección de texto.
+Analizarás un texto delimitado por <texto_a_corregir> y devolverás un objeto JSON.
+
+El objeto JSON debe tener la siguiente estructura exacta:
+{
+  "text": "Aquí va el texto completo con todas las correcciones de ortografía y gramática aplicadas.",
+  "errors": [
+    { "word": "palabra original", "fix": "palabra corregida" },
+    { "word": "otro error", "fix": "otra corrección" }
+  ]
+}
+
+REGLAS ESTRICTAS:
+1.  **JSON VÁLIDO**: Tu respuesta debe ser *solamente* un objeto JSON válido.
+2.  **SIN CHAT**: NO añadas ningún texto, comentario o explicación antes o después del JSON.
+3.  **ESTRUCTURA**: El JSON debe contener las claves "text" (string) y "errors" (array).
+4.  **CASO VACÍO**: Si no hay errores, "text" será el texto original y "errors" DEBE ser un array vacío: [].
+
+Aquí está el texto a analizar:
+<texto_a_corregir>
+${inputText}
+</texto_a_corregir>
+
+Genera el JSON.
+[/INST]`;
 
   const payload = {
     prompt: prompt,
     max_tokens: 2000,
-    temperature: 0.2,
-    top_p: 0.8,
-    top_k: 50,
+    temperature: 0.1,
   };
 
   const command = new InvokeModelCommand({
