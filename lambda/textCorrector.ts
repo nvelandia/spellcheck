@@ -16,6 +16,28 @@ export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
 ): Promise<APIGatewayProxyResult> => {
   console.log('Event:', event);
 
+  // test desde el cms ==============================
+  const allowedOrigin = 'https://nvelandia.cms.tycsports.com';
+
+  // 2. Define los headers de CORS que devolverás
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS', // Métodos que permites
+    'Access-Control-Allow-Headers': 'Content-Type', // Headers que permites (añade "Authorization" si usas tokens)
+  };
+
+  if (event.requestContext.http.method === 'OPTIONS') {
+    console.log('Respondiendo a petición OPTIONS (preflight)');
+
+    return {
+      statusCode: 204, // 204 No Content
+      headers: corsHeaders,
+      body: '', // Body vacío
+    };
+  }
+
+  // test desde el cms ==============================
+
   let inputData;
 
   if (event.body) {
@@ -80,6 +102,7 @@ Genera el JSON.
 
     return {
       statusCode: 200,
+      headers: corsHeaders,
       body: JSON.stringify({
         text: correctedText,
       }),
@@ -88,6 +111,7 @@ Genera el JSON.
     console.error('Error al invocar Bedrock:', error);
     return {
       statusCode: 500,
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Error interno al procesar el texto.',
       }),
