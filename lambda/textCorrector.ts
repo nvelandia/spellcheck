@@ -54,24 +54,23 @@ export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
   const inputText = inputData.text;
 
   const prompt = `
-  [INST]
-  Eres un corrector de textos experto en español, enfocado en deportes. 
+Eres un corrector de textos experto en español, enfocado en deportes. 
 Tu única función es actuar como una API de corrección de texto.
 Analizarás un texto delimitado por <texto_a_corregir> y devolverás un objeto JSON.
+El texto usa un marcador '-BLOQUE_1-'. Dejalos exactamente como están y en su posición original. 
 
 El objeto JSON debe tener la siguiente estructura exacta:
 {
   "text": "Aquí va el texto completo con todas las correcciones de ortografía y gramática aplicadas.",
   "errors": [
-    { "word": "palabra original", "fix": "palabra corregida" },
-    { "word": "otro error", "fix": "otra corrección" }
+    { "word": "palabra original", "fix": "palabra corregida" }, 
   ]
 }
 
 REGLAS ESTRICTAS:
 1.  **JSON VÁLIDO**: Tu respuesta debe ser *solamente* un objeto JSON válido.
 2.  **SIN CHAT**: NO añadas ningún texto, comentario o explicación antes o después del JSON.
-3.  **ESTRUCTURA**: El JSON debe contener las claves "text" (string) y "errors" (array).
+3.  **ESTRUCTURA**: El JSON debe contener las claves "text" (string) y "errors" (array). "errors" DEBE contener todas las correciones.
 4.  **CASO VACÍO**: Si no hay errores, "text" será el texto original y "errors" DEBE ser un array vacío: [].
 
 Aquí está el texto a analizar:
