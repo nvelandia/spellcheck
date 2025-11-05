@@ -67,7 +67,7 @@ REGLA CRÍTICA: El texto contiene etiquetas HTML. Estas etiquetas deben mantener
 
 El texto también utiliza el separador /***/ para dividir los bloques.
 
-Debes devolver tu respuesta en un único bloque de código JSON. NO añadas ningún texto, comentario o explicación antes o después del JSON.
+Debes devolver tu respuesta en un ÚNICO objeto JSON válido. NO añadas ningún texto, comentario o explicación antes o después del JSON.
 
 El JSON debe tener la siguiente estructura:
 
@@ -108,7 +108,14 @@ ${inputText}
     const responseBodyJson = JSON.parse(responseBodyString);
     const textOutput = responseBodyJson.outputs[0].text;
 
-    console.log('Bedrock:', textOutput);
+    const jsonMatch = textOutput.match(/{[\s\S]*}/);
+    if (!jsonMatch) {
+      throw new Error('Mistral no devolvió un JSON válido.');
+    }
+    const jsonStringLimpio = jsonMatch[0];
+    const jsonObject = JSON.parse(jsonStringLimpio);
+
+    console.log('Bedrock:', jsonObject);
 
     return {
       statusCode: 200,
@@ -116,9 +123,7 @@ ${inputText}
         ...corsHeaders,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        data: textOutput,
-      }),
+      body: JSON.stringify(jsonObject),
     };
   } catch (error) {
     console.error('Error al invocar Bedrock:', error);
