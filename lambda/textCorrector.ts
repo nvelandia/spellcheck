@@ -9,7 +9,7 @@ interface LambdaEvent {
 }
 
 const client = new BedrockRuntimeClient({ region: 'us-east-1' });
-const modelId = 'mistral.mistral-small-2402-v1:0';
+const modelId = 'mistral.mistral-large-2402-v1:0';
 
 export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
   event: any
@@ -54,32 +54,38 @@ export const handler: Handler<LambdaEvent, APIGatewayProxyResult> = async (
   const inputText = inputData.text;
 
   const prompt = `
-Eres un corrector de textos experto en español, enfocado en deportes. 
-Tu única función es actuar como una API de corrección de texto.
-Analizarás un texto delimitado por <texto_a_corregir> y devolverás un objeto JSON.
-El texto usa un marcador '-BLOQUE_1-'. Dejalos exactamente como están y en su posición original. 
+  [INST]
+Actúa como un corrector ortográfico experto de un medio de deportes.
 
-El objeto JSON debe tener la siguiente estructura exacta:
-{
-  "text": "Aquí va el texto completo con todas las correcciones de ortografía y gramática aplicadas.",
-  "errors": [
-    { "word": "palabra original", "fix": "palabra corregida" }, 
-  ]
-}
+Te voy a pasar un texto el cual deberás corregir ortográficamente (incluyendo acentuación de nombres propios).
 
-REGLAS ESTRICTAS:
-1.  **JSON VÁLIDO**: Tu respuesta debe ser *solamente* un objeto JSON válido.
-2.  **SIN CHAT**: NO añadas ningún texto, comentario o explicación antes o después del JSON.
-3.  **ESTRUCTURA**: El JSON debe contener las claves "text" (string) y "errors" (array). "errors" DEBE contener todas las correciones.
-4.  **CASO VACÍO**: Si no hay errores, "text" será el texto original y "errors" DEBE ser un array vacío: [].
+También debes corregir errores gramaticales contextuales o palabras usadas incorrectamente. Dado que eres un experto en deportes, presta especial atención a la terminología y jerga deportiva, corrigiendo palabras que sean incorrectas en ese contexto específico, incluyendo homófonos o parónimos (ej. 'saga' en lugar de 'zaga' para la defensa, 'valla' en lugar de 'vaya', 'actitud' en lugar de 'aptitud' si el contexto lo requiere). Corrige también confusiones gramaticales (ej. 'desgarró' en lugar de 'desgarro', 'a' en lugar de 'ha', 'porque' en lugar de 'por qué'), aunque la palabra original esté bien escrita por sí sola.
 
-Aquí está el texto a analizar:
-<texto_a_corregir>
+No modifiques la redacción general.
+
+REGLA CRÍTICA: El texto contiene etiquetas HTML. Estas etiquetas deben mantenerse 100% intactas, sin alteración, y en su posición original. No puedes añadir, eliminar, modificar o corromper ninguna etiqueta HTML (como <p>, </p>, <a href...>, <b>, </div>, etc.). Tu única tarea es corregir el texto dentro de estas etiquetas.
+
+El texto también utiliza el separador /***/ para dividir los bloques.
+
+Debes devolver tu respuesta en un único bloque de código JSON. NO añadas ningún texto, comentario o explicación antes o después del JSON.
+
+El JSON debe tener la siguiente estructura:
+
+Una clave principal llamada blocks.
+
+Dentro de blocks, anidarás cada segmento de texto (separado por /***/) en claves secuenciales: block_1, block_2, block_3, etc.
+
+Una clave principal llamada corrections_made.
+
+Dentro de corrections_made, incluirás un array de objetos. Cada objeto debe tener dos claves: original (con la palabra incorrecta) y corrected (con la palabra corregida). 
+Si no hay correcciones, este array debe estar vacío. No siempre el texto tendrá errores.
+
+Antes de finalizar, verifica que todas las etiquetas HTML del texto de salida son idénticas y están en la misma posición que en el texto de entrada.
+
+A continuación, el texto a corregir:
 ${inputText}
-</texto_a_corregir>
-
-Genera el JSON.
-[/INST]`;
+[/INST]
+`;
 
   const payload = {
     prompt: prompt,
@@ -96,9 +102,13 @@ Genera el JSON.
 
   try {
     const response = await client.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    const bedrockJsonString = responseBody.outputs[0].text.trim();
-    const correctedText = JSON.parse(bedrockJsonString);
+
+    const responseBodyRaw = response.body;
+    const responseBodyString = new TextDecoder().decode(responseBodyRaw);
+    const responseBodyJson = JSON.parse(responseBodyString);
+    const textOutput = responseBodyJson.outputs[0].text;
+
+    console.log('Bedrock:', textOutput);
 
     return {
       statusCode: 200,
@@ -106,7 +116,9 @@ Genera el JSON.
         ...corsHeaders,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(correctedText),
+      body: JSON.stringify({
+        data: textOutput,
+      }),
     };
   } catch (error) {
     console.error('Error al invocar Bedrock:', error);

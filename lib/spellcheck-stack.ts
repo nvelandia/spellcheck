@@ -29,7 +29,7 @@ export class SpellcheckStack extends cdk.Stack {
       effect: iam.Effect.ALLOW,
       actions: ['bedrock:InvokeModel'],
       resources: [
-        `arn:aws:bedrock:${this.region}::foundation-model/mistral.mistral-small-2402-v1:0`,
+        `arn:aws:bedrock:${this.region}::foundation-model/mistral.mistral-large-2402-v1:0`,
       ],
     });
 
